@@ -1,0 +1,169 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>成绩信息列表页面</title>
+<script type="text/javascript">
+	$(document).ready(function(){
+		$("#checkscore").click(function(){
+			if ($("#sid").val()== ""||$("#cid").val()== "") {	//判断是否输入学生id和课程id
+				alert("请输入学生id和课程id！");
+				$("#cid").focus();	//让课程id文本框获得焦点
+				return;
+			} else {	//已经输入学生id和课程id时，检测学生id和课程id是否唯一
+				$.get("checkScore.jsp",
+						{sid:$("#sid").val(),cid:$("#cid").val()},
+						function(data){
+							$("#toolTip").text(data); //设置提示内容
+							$("#toolTip").show(); //显示提示框
+				});
+			}			
+		});
+	});
+</script>
+
+<link rel="stylesheet" type="text/css" href="../css/student.css">
+<script type="text/javascript" src="../js/jquery-1.11.3.min.js"></script>
+</head>
+<script type="text/javascript"> 
+
+$(document).ready( function(){ getList(); } );
+
+function getList(){
+	$.get("../ScoreListAction",
+			function(data){	WriteList(data); },
+			"JSON");
+}
+
+function WriteList(data){
+	var scoreList=eval(data);
+	var strHtml="";
+	strHtml+="<table width=\"100%\"  border=\"0\" cellpadding=\"0\" cellspacing=\"0\" align=\"center\">	";
+	for(var i=0;i<scoreList.length;i++){
+		strHtml+="<tr class=\"td_"+(i%2+1)+"\">";
+		strHtml+="<td width=\"25%\">"+scoreList[i]["sid"]+"</td>";
+		strHtml+="<td width=\"25%\">"+scoreList[i]["cid"]+"</td>";
+		strHtml+="<td width=\"25%\">"+scoreList[i]["score"]+"</td>";
+		strHtml+="<td><a href=\"JavaScript:show_input("+scoreList[i]["sid"]+","+scoreList[i]["cid"]+")\">编辑</a>";
+		strHtml+="<a href=\"JavaScript:delData("+scoreList[i]["sid"]+","+scoreList[i]["cid"]+")\">删除</a></td></tr>";	
+	}
+	strHtml+="</table>";
+	$("#scoresSpan").html(strHtml);
+}  
+
+
+function show_input(sid, cid){
+	if(sid!=-1 && cid!=-1){
+		$('#frmTitle').text("成绩信息修改");
+		$.get("../ScoreGetAction?sid="+sid+"&cid="+cid,			//servlet
+				function(data) { ShowData(eval(data));},	//JSON数据处理函数
+				"JSON");									//JSON		
+	}else{
+		$('#frmTitle').text("成绩信息添加");
+		$("#id").val(-1);
+		$("#sid").val("");
+		$("#cid").val("");
+		$("#score").val("");
+	}
+}
+
+function ShowData(score){
+	$("#sid").val(score["sid"]);
+	$("#cid").val(score["cid"]);
+	$("#score").val(score["score"]);
+}
+function submitData(){
+	var re = /^[0-9]{1,3}$/;
+	if(!re.test($("#sid").val())){
+		alert("学生id不能为空且是1~3位整数");
+		$("#sid").focus();
+		return;
+	}
+	if(!re.test($("#cid").val())){
+		alert("课程id不能为空且是1~3位整数");
+		$("#cid").focus();
+		return;
+	}
+	re = /^\d{1,8}\.{0,1}\d{0,2}$/;
+	if(!re.test($("#score").val())){
+		alert("成绩不能为空且为数值");
+		$("#score").focus();
+		return;
+	}
+	alert("成绩信息提交成功！");
+	$.ajax({
+		cache: true,
+		type: "POST",
+		url:"../ScoreUpdateAction",
+		data:$("#frm").serialize(), 
+		error: function() {
+			alert("请求失败");
+		},
+		success: function(data) {
+			if(data=="0"){ 
+				alert("数据处理不成功"); 
+			}else{
+				alert("数据处理成功!");
+				getList();
+			}
+		}
+	});
+}
+
+ 
+function delData(sid,cid){ 
+	$.ajax({
+		type: "POST",
+		url:"../ScoreDeleteAction",
+		data:{"sid":sid, "cid":cid}, 
+		error: function(request) {
+			alert("Connection error");
+			},
+		success: function(data) {
+			if(data=="0"){ 
+				alert("数据删除不成功"); 
+			}else{
+				alert("数据删除成功!");
+				getList();
+			}
+		}
+	});
+}
+</script>
+<body >
+		<table width="100%"  border="0" cellpadding="0" cellspacing="0" >
+			<tr>
+				<td height="25" colspan="6" class="tb_showall" align="center">
+					成绩信息列表
+				</td>
+			</tr>
+			<tr class="td_header">
+				<td width="25%">学生id</td>
+				<td width="25%">课程id</td>
+				<td width="25%">成绩</td>
+				<td width="25%"></td>
+			</tr>
+		</table>
+			
+<div id="scoresSpan" ></div>	
+
+		<table width="100%"  border="0" cellpadding="0" cellspacing="0" align="center">	
+			<tr><td colspan="4"><a href="JavaScript:show_input(-1,-1);">添加成绩信息</a>
+				<td colspan="4"><a href="JavaScript:getList();">刷新数据列表</a>
+			</tr>
+		</table>
+		<br><br>
+		
+   <form name="frm" id="frm"  method="post" action="../ScoreUpdateAction">
+    <input type="hidden" name="id" id="id" value="">
+   <table border=1>
+	<tr class="td_header"><td colspan="2"> <span id="frmTitle">成绩信息修改</span>，<span class="star">*</span>为必填项</td></tr>
+   <tr><td>学生id</td><td><input type="text" name="sid" id="sid" value="" size="20" maxlength="20"><span class="star">*</span>整数<span id="codeSpan"></span></td></tr>
+   <tr><td>课程id</td><td><input type="text" name="cid" id="cid" value="" size="20" maxlength="20"><span class="star">*</span>整数<span id="codeSpan"></span><img id="checkscore" src="../images/checkId.jpg"
+						width="104" height="23" style="cursor: pointer;"></td></tr>
+   <tr><td>成绩</td><td><input type="text" name="score" id="score" value="" size="20" maxlength="20"><span class="star">*</span>最多一位小数<span id="codeSpan"></span></td></tr>
+   <tr><td colspan="2" align="center"><input type="button"  value="提交" onclick="submitData();"><input type=reset ></td></tr>
+   </table>   
+   </form>
+  </body>
+</html>
+

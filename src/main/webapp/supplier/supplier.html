@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>供货商信息页面</title>
+<style>
+table {
+    border-collapse: collapse;
+}
+
+.td_header{
+   background-color: #E0FFFF;
+   color: #000000;
+   FONT-SIZE: 18pt;
+}
+
+.up{
+   background-color: #90EE90;
+   color: #FFFFFF;
+   cursor: hand;
+}
+
+#frm{
+   width: 500px;
+   height: 200px;
+   FONT-SIZE: 13pt;
+}
+</style>
+<script type="text/javascript" src="../js/jquery-1.11.3.min.js"></script>
+</head>
+<script type="text/javascript">
+$(document).ready( function(){ getList(); } );
+
+function getList(){
+	document.getElementById("refactor").style.display = "none";
+	$.get("../SupplierListAction",function(data){ WriteList(data); },"JSON");
+}
+
+function WriteList(data){
+	var suppliers=eval(data);
+	var htmlstr="<table border=1 width=60% align=center>";
+	for(i=0;i<suppliers.length;i++){
+		htmlstr+="<tr>";
+		htmlstr+="<td width=25%>"+suppliers[i]["Sno"]+"</td>";
+		htmlstr+="<td width=25%>"+suppliers[i]["Sname"]+"</td>";
+		htmlstr+="<td width=25%>"+suppliers[i]["Tel"]+"</td>";
+		htmlstr+="<td><a href=\"JavaScript:show_input("+suppliers[i]["Id"]+")\">编辑</a>";
+		htmlstr+="<a href=\"JavaScript:delData("+suppliers[i]["Id"]+")\">删除</a></td>";	
+		htmlstr+="</tr>";
+	}
+	htmlstr+="</table>";
+	$("#supplierlist").html(htmlstr);
+}
+
+function delData(Id){
+	$.ajax({
+		type:"POST",
+		data:{"Id":Id},
+		url:"../SupplierDelAction",
+		success:function(data){
+		    if(data=="0"){ 
+		      	 alert("删除失败"); 
+		    }else{   
+		    	alert("删除成功!");
+		        getList();	 //刷新列表
+		    }
+		},
+		error:function(){
+			alert("删除请求失败");
+		}		
+	});
+}
+
+function show_input(Id){
+	document.getElementById("refactor").style.display = "block";
+	if(Id!=-1){
+		$('#frmTitle').text("供货商信息修改");
+		$.get("../SupplierGetAction?Id="+Id,			//servlet
+				function(data) { ShowData(eval(data)); },	//JSON数据处理函数
+				"JSON");									//JSON		
+	}else{
+		$('#frmTitle').text("供货商信息添加");
+		$("#Id").val(-1);
+		$("#Sno").val("");
+		$("#Sname").val("");
+		$("#Tel").val("");
+	}
+}
+
+function ShowData(supplier){
+	$("#Id").val(supplier["Id"]);
+	$("#Sno").val(supplier["Sno"]);
+	$("#Sname").val(supplier["Sname"]);
+	$("#Tel").val(supplier["Tel"]);
+}
+
+function check(){
+	var re = /^[0-9]{3,20}$/;
+	if(!re.test($("#Sno").val())){
+		alert("请输入数字组成的供货商编号!");
+		$("#Sno").focus();
+		return ;
+	}
+	re = /^\S{3,20}$/;
+	if(!re.test($("#Sname").val()) ){
+		alert("请输入3~20字符的供货商名!");
+		$("#Sname").focus();
+		return;
+	}
+	
+	$.ajax({
+		type: "POST",
+		url:"../SupplierUpdateAction",
+		data:$("#frm").serialize() ,
+	    error: function() {
+	        alert("请求失败！");
+	    },
+	    success: function(data) {
+		    if(data=="0"){ 
+		    	alert("数据处理不成功"); 
+		    }else{
+		    	alert("数据处理成功!");
+		    	getList();
+		    }
+	    }
+	});
+}
+</script>
+
+<body background="../images/R-C.jpg">
+<table border="1" width=60% align="center">
+<tr><td class="td_header" colspan="7" align="center">供货商信息列表</td></tr>
+<tr align="center">
+	<td width=20%>供货商编号</td><td width=20%>供货商名称</td>
+	<td width=20%>联系电话</td><td width=20%></td>
+</tr>
+</table>
+<div id="supplierlist"></div>
+<br><br>
+		<table width="60%"  border="0" cellpadding="0" cellspacing="0" align="center">	
+			<tr><td colspan="5"><a href="JavaScript:show_input(-1);">添加供货商信息</a>
+				<td colspan="5"><a href="JavaScript:getList();">刷新数据列表</a>
+			</tr>
+		</table>
+		<br><br>
+<div id="refactor">
+<form name=frm id=frm action="../SupplierUpdateAction">
+<input type=hidden name=Id id=Id value="-1">
+<span id="frmTitle">供货商信息添加</span> （* 为必填项）<br>
+供货商编号<input type=text name=Sno id=Sno value="" style="height:20px;width:200px;">*数字组成的编号<br>
+供货商名称<input type=text name=Sname id=Sname value="" style="height:20px;width:200px;">*3~20个字符<br>
+联系电话<input type=text name=Tel id=Tel value="" style="height:20px;width:200px;">*<br>
+<input class="up" type=button value="提交" onclick="check();">
+<input class="up" type=reset value="重置">
+</form>
+</div>
+
+</body>
+</html>
