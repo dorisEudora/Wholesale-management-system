@@ -1,0 +1,172 @@
+
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>用户信息列表页面</title>
+<link rel="stylesheet" type="text/css" href="../css/student.css">
+<script type="text/javascript" src="../js/jquery-1.11.3.min.js"></script>
+</head>
+<style> 
+body{ text-align:center} 
+.divcss5{margin:0 auto;width:400px;height:100px}
+</style>
+<script type="text/javascript"> 
+/*var testData=[
+{"id":1,"name":"高等数学-上册","pwd":"22222"},
+{"id":2,"name":"高等数学-下册","pwd":"22222"}
+];*/
+
+$(document).ready( function(){
+	getList()
+});
+
+function getList(){
+	$.ajax({
+		url:"../UserListAction",
+		type:"get",
+		cache:false,
+		dataType:"json",
+		success:function(data){
+			WriteList(data);
+		},
+		error:function(){
+			alert("获取列表失败");
+		}
+	})
+}
+
+function WriteList(data){
+	var userList=eval(data);
+	var strHtml="";
+	strHtml+="<table width=\"100%\"  border=\"0\" cellpadding=\"0\" cellspacing=\"0\" align=\"center\">	";
+	for(var i=0;i<userList.length;i++){
+		strHtml+="<tr class=\"td_"+(i%2+1)+"\">";
+		strHtml+="<td width=\"25%\">"+userList[i]["id"]+"</td>";
+		strHtml+="<td width=\"25%\">"+userList[i]["name"]+"</td>";
+		strHtml+="<td width=\"25%\">"+userList[i]["pwd"]+"</td>";
+		strHtml+="<td><a href=\"JavaScript:show_input("+userList[i]["id"]+")\">编辑</a>";
+		strHtml+="<a href=\"JavaScript:delData("+userList[i]["id"]+")\">删除</a></td></tr>";	
+	}
+	strHtml+="</table>";
+	document.getElementById("usersSpan").innerHTML =strHtml;
+}  
+
+
+function show_input(id){
+	$('#usersEditDiv').css('display','block');
+	if(id!=-1){
+		$('#frmTitle').text("用户信息修改");
+		
+		$.get("../UserGetAction?id="+id,			//servlet
+				function(data) { ShowData(eval(data));},	//JSON数据处理函数
+				"JSON");									//JSON		
+	}else{
+		$('#frmTitle').text("用户信息添加");
+		ClearData();
+	}
+}
+
+function ShowData(user){
+	$("#id").val(user["id"]);
+	$("#pwd").val(user["pwd"]);
+	$("#name").val(user["name"]);
+}
+function ClearData(){
+	$("#id").val(-1);
+	$("#name").val("");
+	$("#pwd").val("");
+}
+function submitData(){
+	var reg = /\S{3,20}/;
+	if(!reg.test(frm.name.value)){
+		alert("请输入3~20字符长的用户名称");
+		frm.name.focus();
+		return false
+	}
+	reg = /\S{5,10}/;
+	if(!reg.test(frm.pwd.value)){
+		alert("请输入5~10字符长的密码!");
+		frm.pwd.focus();
+		return false;
+	}		
+	alert("用户信息提交成功！");
+	$.ajax({
+		cache: true,
+		type: "POST",
+		url:"../UserUpdateAction",
+		data:$("#userFrm").serialize(), 
+		async: false,
+		error: function(request) {
+			alert("Connection error");
+			},
+			success: function(data) {
+				if(data=="0"){ 
+					alert("数据处理不成功"); 
+				}else{
+					$("#usersEditDiv").css("display","none");
+					//alert("数据处理成功!");
+					getList();
+				}
+			}
+		});
+
+}
+ 
+function delData(id){ 
+	$.ajax({
+		cache: true,
+		type: "POST",
+		url:"../UserDeleteAction",
+		data:{"id":id}, 
+		async: false,
+		error: function(request) {
+			alert("Connection error");
+			},
+			success: function(data) {
+				if(data=="0"){ 
+					alert("数据删除不成功"); 
+				}else{
+					alert("数据删除成功!");
+					getList();
+				}
+			}
+		});
+}
+</script>
+<body >
+		<table width="100%"  border="0" cellpadding="0" cellspacing="0" >
+			<tr>
+				<td height="25" colspan="6" class="tb_showall" align="center">
+					用户信息列表
+				</td>
+			</tr>
+			<tr class="td_header">
+				<td width="25%">id</td>
+				<td width="25%">姓名</td>
+				<td width="25%">密码</td>
+				<td width="25%"></td>
+			</tr>
+		</table>
+			
+<div id="usersSpan" ></div>	
+
+		<table width="100%"  border="0" cellpadding="0" cellspacing="0" align="center">	
+			<tr><td colspan="4"><a href="JavaScript:show_input(-1);">添加用户信息</a>
+				<td colspan="4"><a href="JavaScript:getList();">刷新数据列表</a>
+			</tr>
+		</table>
+		<br><br>
+<div id="usersEditDiv" style="display:NONE" class="divcss5">
+   <form name="frm" id="userFrm"  method="post" action="../UserUpdateAction">
+    <input type="hidden" name="id" id="id" value="">
+   <table border=1>
+	<tr class="td_header"><td colspan="2"> <span id="frmTitle">学生信息修改</span>，<span class="star">*</span>为必填项</td></tr>
+   <tr><td>姓名</td><td><input type="text" name="name" id="name" value="" size="20" maxlength="20"><span class="star">*</span>3~20位字符<span id="codeSpan"></span></td></tr>
+   <tr><td>密码</td><td><input type="password" name="pwd" id="pwd" value="" size="20" maxlength="20"><span class="star">*</span>5~10位字符<span id="codeSpan"></span></td></tr>
+   <tr><td colspan="2" align="center"><input type="button"  value="提交" onclick="submitData();"></td></tr>
+   </table>   
+   </form>
+</div>	
+  </body>
+</html>
+
