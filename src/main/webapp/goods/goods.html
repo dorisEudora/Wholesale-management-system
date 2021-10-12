@@ -1,0 +1,166 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<title>商品信息列表页面</title>
+
+
+
+<link rel="stylesheet" type="text/css" href="../css/student.css">
+<script type="text/javascript" src="../js/jquery-1.11.3.min.js"></script>
+</head>
+
+<script type="text/javascript"> 
+
+$(document).ready( function(){ getList(); } );
+
+function getList(){
+	$.get("../GoodsListAction",
+			function(data){	WriteList(data); },
+			"JSON");
+}
+
+function WriteList(data){
+	var goodsList=eval(data);
+	var strHtml="";
+	strHtml+="<table width=\"100%\"  border=\"0\" cellpadding=\"0\" cellspacing=\"0\" align=\"center\">	";
+	for(var i=0;i<goodsList.length;i++){
+		strHtml+="<tr class=\"td_"+(i%2+1)+"\">";
+		strHtml+="<td width=\"20%\">"+goodsList[i]["sno"]+"</td>";
+		strHtml+="<td width=\"20%\">"+goodsList[i]["name"]+"</td>";
+		strHtml+="<td width=\"20%\">"+goodsList[i]["psno"]+"</td>";
+		strHtml+="<td width=\"20%\">"+goodsList[i]["num"]+"</td>";
+		strHtml+="<td><a href=\"JavaScript:show_input("+goodsList[i]["id"]+")\">编辑</a>";
+		strHtml+="<a href=\"JavaScript:delData("+goodsList[i]["id"]+")\">删除</a></td></tr>";	
+	}
+	strHtml+="</table>";
+	$("#goodsSpan").html(strHtml);
+}  
+
+
+function show_input(id){
+	if(id!=-1){
+		$('#frmTitle').text("商品信息修改");
+		$.get("../GoodsGetAction?id="+id,			//servlet
+				function(data) { ShowData(eval(data));},	//JSON数据处理函数
+				"JSON");									//JSON		
+	}else{
+		$('#frmTitle').text("商品信息添加");
+		$("#id").val(-1);
+		$("#sno").val("");
+		$("#name").val("");
+		$("#psno").val("");
+		$("#num").val("");
+	}
+}
+
+function ShowData(goods){
+	$("#id").val(goods["id"]);
+	$("#sno").val(goods["sno"]);
+	$("#name").val(goods["name"]);
+	$("#psno").val(goods["psno"]);
+	$("#num").val(goods["num"]);
+}
+function submitData(){
+	var re = /^[0-9]{1,3}$/;
+	if(!re.test($("#sno").val())){
+		alert("商品编号不能为空且是1~3位整数");
+		$("#sno").focus();
+		return;
+	}
+	if(!re.test($("#psno").val())){
+		alert("供货商编号不能为空且是1~3位整数");
+		$("#psno").focus();
+		return;
+	}
+	re = /\S/;
+	if(re.test($("#name").val())){
+		alert("商品名称不能为空");
+		$("#name").focus();
+		return;
+	}
+	re = /^\d{1,8}\.{0,1}\d{0,2}$/;
+	if(!re.test($("#num").val())){
+		alert("商品库存数量不能为空且为数值");
+		$("#num").focus();
+		return;
+	}
+	alert("商品信息提交成功！");
+	$.ajax({
+		cache: true,
+		type: "POST",
+		url:"../GoodsUpdateAction",
+		data:$("#frm").serialize(), 
+		error: function() {
+			alert("请求失败");
+		},
+		success: function(data) {
+			if(data=="0"){ 
+				alert("数据处理不成功"); 
+			}else{
+				alert("数据处理成功!");
+				getList();
+			}
+		}
+	});
+}
+
+ 
+function delData(id){ 
+	$.ajax({
+		type: "POST",
+		url:"../GoodsDeleteAction",
+		data:{"id":id}, 
+		error: function(request) {
+			alert("Connection error");
+			},
+		success: function(data) {
+			if(data=="0"){ 
+				alert("数据删除不成功"); 
+			}else{
+				alert("数据删除成功!");
+				getList();
+			}
+		}
+	});
+}
+</script>
+<body >
+		<table width="100%"  border="0" cellpadding="0" cellspacing="0" >
+			<tr>
+				<td height="25" colspan="6" class="tb_showall" align="center">
+					商品信息列表
+				</td>
+			</tr>
+			<tr class="td_header">
+				<td width="20%">商品编号</td>
+				<td width="20%">商品名称</td>
+				<td width="20%">供货商编号</td>
+				<td width="20%">商品库存数量</td>
+				<td width="20%"></td>
+			</tr>
+		</table>
+			
+<div id="goodsSpan" ></div>	
+
+		<table width="100%"  border="0" cellpadding="0" cellspacing="0" align="center">	
+			<tr><td colspan="4"><a href="JavaScript:show_input(-1);">添加商品信息</a>
+				<td colspan="4"><a href="JavaScript:getList();">刷新商品列表</a>
+			</tr>
+		</table>
+		<br><br>
+		
+   <form name="frm" id="frm"  method="post" action="../GoodsUpdateAction">
+    <input type="hidden" name="i" id="i" value="">
+   <table border=1>
+	<tr class="td_header"><td colspan="2"> <span id="frmTitle">商品信息修改</span>，<span class="star">*</span>为必填项</td></tr>
+	<tr><td>商品id</td><td><input type="text" name="id" id="id" value="" size="20" maxlength="20"><span class="star">*</span>整数<span id="codeSpan"></span></td></tr>
+   <tr><td>商品编号</td><td><input type="text" name="sno" id="sno" value="" size="20" maxlength="20"><span class="star">*</span>整数<span id="codeSpan"></span></td></tr>
+   <tr><td>商品名称</td><td><input type="text" name="name" id="name" value="" size="20" maxlength="20"><span class="star">*</span>字符串<span id="codeSpan"></span></td></tr>
+   <tr><td>供货商编号</td><td><input type="text" name="psno" id="psno" value="" size="20" maxlength="20"><span class="star">*</span>整数<span id="codeSpan"></span></td></tr>
+   <tr><td>商品库存数量</td><td><input type="text" name="num" id="num" value="" size="20" maxlength="20"><span class="star">*</span>整数<span id="codeSpan"></span></td></tr>
+   <tr><td colspan="2" align="center"><input type="button"  value="提交" onclick="submitData();"><input type=reset ></td></tr>
+   </table>   
+   </form>
+  </body>
+</html>
+
